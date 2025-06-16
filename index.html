@@ -83,15 +83,18 @@ fetch('development_zones_and_nodes.geojson')
     const layer = L.geoJson(data, {
       style: style,
       onEachFeature: (feature, layer) => {
-        const tooltipText = feature.properties.Zone_Name || "Unknown";
-        const popupText = `<b>Notes:</b> ${feature.properties.notes || "No data"}`;
-        layer.bindTooltip(tooltipText, { sticky: true });
-        layer.bindPopup(popupText);
-        layer.on('click', function (e) {
-          e.originalEvent.preventDefault();
-          e.originalEvent.stopPropagation();
-        });
-      }
+  const tooltipText = feature.properties.Zone_Name || "Unknown";
+  const popupText = feature.properties.notes || "No data";
+
+  layer.bindTooltip(tooltipText, { sticky: true });
+  layer.bindPopup(popupText);
+
+  layer.on('click', function (e) {
+    e.originalEvent.preventDefault();
+    e.originalEvent.stopPropagation();
+  });
+}
+
     }).addTo(map);
 
     map.fitBounds(layer.getBounds());
