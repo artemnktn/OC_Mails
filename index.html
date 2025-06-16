@@ -36,42 +36,47 @@
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chroma-js@2.4.2/chroma.min.js"></script>
 <script>
 
-// Цвета из палитры Paired (8 штук)
-const colorMap = {
-  "Mixed-Use Development": "#a6cee3",
-  "Residential Development": "#1f78b4",
-  "Employment Node": "#b2df8a",
-  "Mixed-Use Node": "#33a02c",
-  "City Centre Node": "#fb9a99",
-  "Local Centre Node": "#e31a1c",
-  "Cultural Node": "#fdbf6f",
-  "Green Node": "#ff7f00"
-};
-
+// Создаём карту
 const map = L.map('map').setView([32.08, 34.78], 12);
 
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
   attribution: '&copy; OpenStreetMap & CartoDB'
 }).addTo(map);
 
-// Стиль по типу зоны
-function style(feature) {
-  const name = feature.properties.Zone_Name;
-  return {
-    fillColor: colorMap[name] || 'gray',
-    weight: 0.5,
-    opacity: 1,
-    color: 'white',
-    fillOpacity: 0.7
-  };
-}
-
-// Загрузка GeoJSON
+// Подгружаем GeoJSON и строим всё оттуда
 fetch('development_zones_and_nodes.geojson')
   .then(res => res.json())
   .then(data => {
+    // Собираем уникальные значения Zone_Name
+    const zoneSet = new Set();
+    data.features.forEach(f => {
+      const val = f.properties.Zone_Name?.trim();
+      if (val) zoneSet.add(val);
+    });
+    const uniqueZones = Array.from(zoneSet).sort();
+
+    // Генерируем цвета (палитра chroma)
+    const palette = chroma.scale('Paired').mode('lch').colors(uniqueZones.length);
+    const colorMap = {};
+    uniqueZones.forEach((z, i) => {
+      colorMap[z] = palette[i];
+    });
+
+    // Стиль функции
+    function style(feature) {
+      const z = feature.properties.Zone_Name?.trim();
+      return {
+        fillColor: colorMap[z] || 'gray',
+        weight: 0.5,
+        opacity: 1,
+        color: 'white',
+        fillOpacity: 0.7
+      };
+    }
+
     const layer = L.geoJson(data, {
       style: style,
       onEachFeature: (feature, layer) => {
@@ -81,19 +86,20 @@ fetch('development_zones_and_nodes.geojson')
         layer.bindPopup(popupText);
       }
     }).addTo(map);
-    map.fitBounds(layer.getBounds());
-  });
 
-// Легенда
-const legend = L.control({ position: "bottomleft" });
-legend.onAdd = function () {
-  const div = L.DomUtil.create("div", "legend");
-  div.innerHTML = "<b>Zone Type Legend</b><br>" + Object.entries(colorMap).map(
-    ([name, color]) => `<i style="background:${color}"></i>${name}`
-  ).join("<br>");
-  return div;
-};
-legend.addTo(map);
+    map.fitBounds(layer.getBounds());
+
+    // Легенда
+    const legend = L.control({ position: "bottomleft" });
+    legend.onAdd = function () {
+      const div = L.DomUtil.create("div", "legend");
+      div.innerHTML = "<b>Zone Type Legend</b><br>" + uniqueZones.map(
+        z => `<i style="background:${colorMap[z]}"></i>${z}`
+      ).join("<br>");
+      return div;
+    };
+    legend.addTo(map);
+  });
 
 </script>
 
