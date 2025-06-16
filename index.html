@@ -38,28 +38,25 @@
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 <script>
 
-// Создаем карту
-const map = L.map('map').setView([0, 0], 2);
+// Цвета из палитры Paired (8 штук)
+const colorMap = {
+  "Mixed-Use Development": "#a6cee3",
+  "Residential Development": "#1f78b4",
+  "Employment Node": "#b2df8a",
+  "Mixed-Use Node": "#33a02c",
+  "City Centre Node": "#fb9a99",
+  "Local Centre Node": "#e31a1c",
+  "Cultural Node": "#fdbf6f",
+  "Green Node": "#ff7f00"
+};
+
+const map = L.map('map').setView([32.08, 34.78], 12);
 
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
   attribution: '&copy; OpenStreetMap & CartoDB'
 }).addTo(map);
 
-// Цвета Paired из Matplotlib
-const colorMap = {
-  "Zone A": "#a6cee3",
-  "Zone B": "#1f78b4",
-  "Zone C": "#b2df8a",
-  "Zone D": "#33a02c",
-  "Zone E": "#fb9a99",
-  "Zone F": "#e31a1c",
-  "Zone G": "#fdbf6f",
-  "Zone H": "#ff7f00",
-  "Zone I": "#cab2d6",
-  "Zone J": "#6a3d9a"
-};
-
-// Стилизация по значению
+// Стиль по типу зоны
 function style(feature) {
   const name = feature.properties.Zone_Name;
   return {
@@ -71,7 +68,7 @@ function style(feature) {
   };
 }
 
-// Подгружаем GeoJSON
+// Загрузка GeoJSON
 fetch('development_zones_and_nodes.geojson')
   .then(res => res.json())
   .then(data => {
