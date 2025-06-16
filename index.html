@@ -29,6 +29,11 @@
       display: inline-block;
       margin-right: 5px;
     }
+
+    /* 🔧 Убираем синюю рамку при клике на объект */
+    path.leaflet-interactive:focus {
+      outline: none !important;
+    }
   </style>
 </head>
 <body>
@@ -38,15 +43,14 @@
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chroma-js@2.4.2/chroma.min.js"></script>
 <script>
-
-// Создаём карту
+// Создаем карту
 const map = L.map('map').setView([32.08, 34.78], 12);
 
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
   attribution: '&copy; OpenStreetMap & CartoDB'
 }).addTo(map);
 
-// Подгружаем GeoJSON и строим всё оттуда
+// Загрузка GeoJSON и рендер
 fetch('development_zones_and_nodes.geojson')
   .then(res => res.json())
   .then(data => {
@@ -58,18 +62,18 @@ fetch('development_zones_and_nodes.geojson')
     });
     const uniqueZones = Array.from(zoneSet).sort();
 
-    // Генерируем цвета (палитра chroma)
+    // Генерируем цветовую палитру
     const palette = chroma.scale('Paired').mode('lch').colors(uniqueZones.length);
     const colorMap = {};
-    uniqueZones.forEach((z, i) => {
-      colorMap[z] = palette[i];
+    uniqueZones.forEach((zone, i) => {
+      colorMap[zone] = palette[i];
     });
 
-    // Стиль функции
+    // Стиль геометрий
     function style(feature) {
-      const z = feature.properties.Zone_Name?.trim();
+      const zone = feature.properties.Zone_Name?.trim();
       return {
-        fillColor: colorMap[z] || 'gray',
+        fillColor: colorMap[zone] || 'gray',
         weight: 0.5,
         opacity: 1,
         color: 'white',
@@ -77,29 +81,28 @@ fetch('development_zones_and_nodes.geojson')
       };
     }
 
-const layer = L.geoJson(data, {
-  style: style,
-  onEachFeature: (feature, layer) => {
-    const tooltipText = feature.properties.Zone_Name || "Unknown";
-    const popupText = `<b>Notes:</b> ${feature.properties.notes || "No data"}`;
+    const layer = L.geoJson(data, {
+      style: style,
+      onEachFeature: (feature, layer) => {
+        const zone = feature.properties.Zone_Name || "Unknown";
+        const notes = feature.properties.notes || "No data";
 
-    layer.bindTooltip(tooltipText, { sticky: true });
-    layer.bindPopup(popupText);
+        layer.bindTooltip(zone, { sticky: true });
+        layer.bindPopup(`<b>Notes:</b> ${notes}`);
 
-    // Убираем синий обвод при клике
-    layer.on('mouseover', function () {
-      this.setStyle({ weight: 1.5 });
-    });
-    layer.on('mouseout', function () {
-      this.setStyle(style(feature));
-    });
-    layer.on('click', function (e) {
-      // Отключаем auto-focus + автоhighlight
-      e.originalEvent.preventDefault();
-      e.originalEvent.stopPropagation();
-    });
-  }
-}).addTo(map);
+        // Убираем автоматическую подсветку при клике
+        layer.on('mouseover', function () {
+          this.setStyle({ weight: 1.5 });
+        });
+        layer.on('mouseout', function () {
+          this.setStyle(style(feature));
+        });
+        layer.on('click', function (e) {
+          e.originalEvent.preventDefault();
+          e.originalEvent.stopPropagation();
+        });
+      }
+    }).addTo(map);
 
     map.fitBounds(layer.getBounds());
 
@@ -108,13 +111,12 @@ const layer = L.geoJson(data, {
     legend.onAdd = function () {
       const div = L.DomUtil.create("div", "legend");
       div.innerHTML = "<b>Zone Type Legend</b><br>" + uniqueZones.map(
-        z => `<i style="background:${colorMap[z]}"></i>${z}`
+        zone => `<i style="background:${colorMap[zone]}"></i>${zone}`
       ).join("<br>");
       return div;
     };
     legend.addTo(map);
   });
-
 </script>
 
 </body>
