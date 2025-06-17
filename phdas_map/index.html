@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Priority Housing Areas Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <style>
+    html, body, #map {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    .legend {
+      position: fixed;
+      bottom: 50px;
+      left: 50px;
+      background: white;
+      padding: 10px;
+      border-radius: 18px;
+      font-size: 14px;
+      z-index: 9999;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+    }
+    .legend i {
+      width: 10px;
+      height: 10px;
+      display: inline-block;
+      margin-right: 5px;
+    }
+    path.leaflet-interactive:focus,
+    path.leaflet-interactive:hover {
+      outline: none !important;
+      stroke: white !important;
+      stroke-width: 0.5 !important;
+      opacity: 1 !important;
+      fill-opacity: 0.7 !important;
+    }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chroma-js@2.4.2/chroma.min.js"></script>
+<script>
+  const map = L.map('map', {
+    zoomControl: false
+  }).setView([32.08, 34.78], 12);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap & CartoDB'
+  }).addTo(map);
+
+  fetch('phdas.geojson')
+    .then(res => res.json())
+    .then(data => {
+      const valueSet = new Set();
+      data.features.forEach(f => {
+        const val = f.properties.Priirity_T?.trim();
+        if (val) valueSet.add(val);
+      });
+      const categories = Array.from(valueSet).sort();
+
+      const palette = chroma.scale('Dark2').mode('lch').colors(categories.length);
+      const colorMap = {};
+      categories.forEach((val, i) => {
+        colorMap[val] = palette[i];
+      });
+
+      const layer = L.geoJson(data, {
+        style: f => ({
+          fillColor: colorMap[f.properties.Priirity_T?.trim()] || 'gray',
+          weight: 0.5,
+          opacity: 1,
+          color: 'white',
+          fillOpacity: 0.7
+        }),
+        onEachFeature: (feature, layer) => {
+          const tooltipText = feature.properties.PHSHDA_Nam || "Unnamed";
+          const popupText = feature.properties.notes || "No data";
+          layer.bindTooltip(tooltipText, { sticky: true });
+          layer.bindPopup(popupText);
+        }
+      }).addTo(map);
+
+      map.fitBounds(layer.getBounds());
+
+      const legend = L.control({ position: "bottomleft" });
+      legend.onAdd = function () {
+        const div = L.DomUtil.create("div", "legend");
+        div.innerHTML = "<b>Priority Type</b><br>" + categories.map(
+          val => `<i style="background:${colorMap[val]}"></i>${val}`
+        ).join("<br>");
+        return div;
+      };
+      legend.addTo(map);
+    });
+</script>
+
+</body>
+</html>
