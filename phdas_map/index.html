@@ -44,7 +44,6 @@
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chroma-js@2.4.2/chroma.min.js"></script>
 <script>
   const map = L.map('map', {
     zoomControl: false
@@ -57,27 +56,24 @@
   fetch('phdas.geojson')
     .then(res => res.json())
     .then(data => {
-      const valueSet = new Set();
-      data.features.forEach(f => {
-        const val = f.properties.Priirity_T?.trim();
-        if (val) valueSet.add(val);
-      });
-      const categories = Array.from(valueSet).sort();
-
-      const palette = chroma.scale('Dark2').mode('lch').colors(categories.length);
-      const colorMap = {};
-      categories.forEach((val, i) => {
-        colorMap[val] = palette[i];
-      });
+      // Жёстко задаём два значения
+      const categories = ['Short-Medium Term', 'Long Term'];
+      const colorMap = {
+        'Short-Medium Term': '#ff7f0e',
+        'Long Term': '#1f77b4'
+      };
 
       const layer = L.geoJson(data, {
-        style: f => ({
-          fillColor: colorMap[f.properties.Priirity_T?.trim()] || 'gray',
-          weight: 0.5,
-          opacity: 1,
-          color: 'white',
-          fillOpacity: 0.7
-        }),
+        style: f => {
+          const val = f.properties.Priority_T?.trim();
+          return {
+            fillColor: colorMap[val] || 'gray',
+            weight: 0.5,
+            opacity: 1,
+            color: 'white',
+            fillOpacity: 0.7
+          };
+        },
         onEachFeature: (feature, layer) => {
           const tooltipText = feature.properties.PHSHDA_Nam || "Unnamed";
           const popupText = feature.properties.notes || "No data";
