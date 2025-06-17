@@ -70,30 +70,46 @@
         colorMap[val] = palette[i];
       });
 
-      function style(feature) {
-        const val = feature.properties.Restructur?.trim();
-        return {
-          fillColor: colorMap[val] || 'gray',
+      // Первый слой — всё кроме Restructuring Zones 2011
+      const baseLayer = L.geoJson(data, {
+        filter: f => f.properties.Restructur?.trim() !== "Restructuring Zones 2011",
+        style: f => ({
+          fillColor: colorMap[f.properties.Restructur?.trim()] || 'gray',
           weight: 0.5,
           opacity: 1,
           color: 'white',
           fillOpacity: 0.7
-        };
-      }
-
-      const layer = L.geoJson(data, {
-        style: style,
+        }),
         onEachFeature: (feature, layer) => {
           const tooltipText = feature.properties.Name || "Unnamed";
           const popupText = feature.properties.notes || "No data";
-
           layer.bindTooltip(tooltipText, { sticky: true });
           layer.bindPopup(popupText);
         }
       }).addTo(map);
 
-      map.fitBounds(layer.getBounds());
+      // Второй слой — только Restructuring Zones 2011, без прозрачности
+      const overlayLayer = L.geoJson(data, {
+        filter: f => f.properties.Restructur?.trim() === "Restructuring Zones 2011",
+        style: f => ({
+          fillColor: colorMap["Restructuring Zones 2011"] || '#ff0000',
+          weight: 0.5,
+          opacity: 1,
+          color: 'white',
+          fillOpacity: 1.0
+        }),
+        onEachFeature: (feature, layer) => {
+          const tooltipText = feature.properties.Name || "Unnamed";
+          const popupText = feature.properties.notes || "No data";
+          layer.bindTooltip(tooltipText, { sticky: true });
+          layer.bindPopup(popupText);
+        }
+      }).addTo(map);
 
+      // Центрирование
+      map.fitBounds(baseLayer.getBounds());
+
+      // Легенда
       const legend = L.control({ position: "bottomleft" });
       legend.onAdd = function () {
         const div = L.DomUtil.create("div", "legend");
