@@ -64,7 +64,7 @@
       });
       const categories = Array.from(valueSet).sort();
 
-      const palette = chroma.scale('viridis').mode('lch').colors(categories.length);
+      const palette = chroma.scale('Set2').mode('lch').colors(categories.length);
       const colorMap = {};
       categories.forEach((val, i) => {
         colorMap[val] = palette[i];
