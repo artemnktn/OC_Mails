@@ -29,8 +29,6 @@
       display: inline-block;
       margin-right: 5px;
     }
-
-    /* ❌ Убираем любые hover/focus эффекты */
     path.leaflet-interactive:focus,
     path.leaflet-interactive:hover {
       outline: none !important;
@@ -46,10 +44,9 @@
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chroma-js@2.4.2/chroma.min.js"></script>
 <script>
   const map = L.map('map', {
-    zoomControl: false // 🔧 Убираем кнопки зума
+    zoomControl: false
   }).setView([32.08, 34.78], 12);
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -59,18 +56,16 @@
   fetch('development_zones_and_nodes.geojson')
     .then(res => res.json())
     .then(data => {
-      const zoneSet = new Set();
-      data.features.forEach(f => {
-        const val = f.properties.Zone_Name?.trim();
-        if (val) zoneSet.add(val);
-      });
-      const uniqueZones = Array.from(zoneSet).sort();
-
-      const palette = chroma.scale('Paired').mode('lch').colors(uniqueZones.length);
-      const colorMap = {};
-      uniqueZones.forEach((z, i) => {
-        colorMap[z] = palette[i];
-      });
+      const colorMap = {
+        'Beyond Urban Development Boundary': '#234014',
+        'General Urban Zone': '#FCFC78',
+        'Inner City Node': '#D3382C',
+        'LED Zone': '#FAE8C4',
+        'Metropolitan Node': '#F49E56',
+        'Peri-Urban Zone': '#49ACF1',
+        'Regional Node': '#B2B2B2',
+        'Sub-Urban Zone': '#A8D89B'
+      };
 
       function style(feature) {
         const z = feature.properties.Zone_Name?.trim();
@@ -104,8 +99,8 @@
       const legend = L.control({ position: "bottomleft" });
       legend.onAdd = function () {
         const div = L.DomUtil.create("div", "legend");
-        div.innerHTML = "<b>Zone Type Legend</b><br>" + uniqueZones.map(
-          z => `<i style="background:${colorMap[z]}"></i>${z}`
+        div.innerHTML = "<b>Zone Type Legend</b><br>" + Object.entries(colorMap).map(
+          ([z, color]) => `<i style="background:${color}"></i>${z}`
         ).join("<br>");
         return div;
       };
